@@ -1,24 +1,41 @@
-// 4. Your `apiRoutes.js` file should contain two routes:
-
-//    * A GET route with the url `/api/friends`. This will be used to display a JSON of all possible friends.
-//    * A POST routes `/api/friends`. This will be used to handle incoming survey results. This route will also be used to handle the compatibility logic.
 var surveyData = require("../data/friends");
 
-module.exports = function(app) {
-    app.get("/api/friends", function(res, res){
+module.exports = function (app) {
+    app.get("/api/friends", function (req, res) {
         res.json(surveyData);
     });
 
-    app.post("/api/friends", function(res, res){
-        // This route will also be used to handle the compatibility logic.
-        // this is an if statement that will go through answer results.
-        if (surveyData.length < 5) {
-            surveyData.push(req.body);
-            res.json(true);
+    app.post("/api/friends", function (req, res) {
+        var userAnswers = req.body;
+        console.log(userAnswers);
+
+        for (var i = 0; i < userAnswers.scores.length; i++) {
+            userAnswers.scores[i] = parseInt(userAnswers.scores[i]);
         }
-        else {
-            surveyData.push(req.body)
-            res.json(false);
+
+        var bestFriendIndex = 0;
+        var minimumDifference = 32;
+        for (var i = 0; i < surveyData.length; i++) {
+            var totalDifference = 0;
+            for (var a = 0; a < surveyData[i].scores.length; a++) {
+                var difference = Math.abs(userAnswers.scores[a] - surveyData[i].scores[a]);
+                totalDifference += difference;
+            }
+
+            // this is an if statement that will go through answer results.
+            if (totalDifference < minimumDifference) {
+                bestFriendIndex = i;
+                minimumDifference = totalDifference;
+            }
         }
+        // send back to browser the best friend match
+        surveyData.push(userAnswers);
+        res.json(surveyData[bestFriendIndex]);
     });
+
+    app.post("/api/clear", function (req, res) {
+        userAnswers.length = 0;
+        res.json({ ok: true });
+    });
+
 };
